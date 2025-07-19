@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion & Beauty AI Consultant</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .chat-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        .user-message {
+            margin-left: auto;
+            background: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 15px 15px 0 15px;
+        }
+        .bot-message {
+            background: #f1f1f1;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 15px 15px 15px 0;
+        }
+        .chat-input {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+            gap: 10px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .image-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .preview-image {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f0f0f0;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #e0e0e0;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        #user-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 16px;
+        }
+        #send-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #send-button:hover {
+            background: #0056b3;
+        }
+        .typing-indicator {
+            display: none;
+            color: #666;
+            font-style: italic;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message">
+                Hello! I'm Gemini 2.5 Pro. How can I assist you today?
+            </div>
+        </div>
+        <div class="chat-input">
+            <div id="image-preview" class="image-preview">
+                <!-- Image previews will be added here -->
+            </div>
+            <div class="input-row">
+                <label class="file-input-label" title="Add images">
+                    <i class="fas fa-camera"></i>
+                    <input type="file" id="image-input" class="file-input" accept="image/*" multiple>
+                </label>
+                <input type="text" id="user-input" placeholder="Describe what you'd like to know about your style..." onkeypress="handleKeyPress(event)">
+                <button id="send-button" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="typing-indicator" id="typing-indicator">
+        Gemini is typing...
+    </div>
+
+    <script>
+        function addMessage(message, isUser, images = []) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            // Add images if any
+            if (images && images.length > 0) {
+                const imagesContainer = document.createElement('div');
+                imagesContainer.className = 'message-images';
+                imagesContainer.style.display = 'flex';
+                imagesContainer.style.flexWrap = 'wrap';
+                imagesContainer.style.gap = '10px';
+                imagesContainer.style.marginBottom = '10px';
+                
+                images.forEach(imgSrc => {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.style.maxWidth = '200px';
+                    img.style.borderRadius = '8px';
+                    img.style.border = '1px solid #eee';
+                    imagesContainer.appendChild(img);
+                });
+                
+                messageDiv.appendChild(imagesContainer);
+            }
+            
+            // Add text message
+            const textDiv = document.createElement('div');
+            textDiv.textContent = message;
+            messageDiv.appendChild(textDiv);
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function addImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewContainer = document.getElementById('image-preview');
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'preview-image';
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-image';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.onclick = function() {
+                    previewContainer.removeChild(previewDiv);
+                };
+                
+                previewDiv.appendChild(img);
+                previewDiv.appendChild(removeBtn);
+                previewContainer.appendChild(previewDiv);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const message = userInput.value.trim();
+            const imageInput = document.getElementById('image-input');
+            const previewContainer = document.getElementById('image-preview');
+            
+            if (!message && previewContainer.children.length === 0) return;
+
+            // Create FormData to handle file uploads
+            const formData = new FormData();
+            if (message) formData.append('message', message);
+            
+            // Add all selected images
+            const files = imageInput.files;
+            for (let i = 0; i < files.length; i++) {
+                formData.append('images', files[i]);
+            }
+            
+            // Add user message to chat with image previews
+            const previewImages = Array.from(previewContainer.querySelectorAll('img')).map(img => img.src);
+            addMessage(message || 'Analyzing images...', true, previewImages);
+            
+            // Clear inputs
+            userInput.value = '';
+            imageInput.value = '';
+            previewContainer.innerHTML = '';
+            
+            // Show typing indicator
+            const typingIndicator = document.getElementById('typing-indicator');
+            typingIndicator.style.display = 'block';
+            typingIndicator.scrollIntoView({ behavior: 'smooth' });
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    body: formData  // Let the browser set the correct Content-Type with boundary
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage('Error: ' + data.error, false);
+                } else {
+                    // Format the response with markdown support
+                    const formattedResponse = data.response.replace(/\n/g, '<br>');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message bot-message';
+                    messageDiv.innerHTML = formattedResponse;
+                    document.getElementById('chat-messages').appendChild(messageDiv);
+                }
+            } catch (error) {
+                addMessage('Error connecting to the server. Please try again.', false);
+                console.error('Error:', error);
+            } finally {
+                // Hide typing indicator
+                typingIndicator.style.display = 'none';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // Handle image selection
+        document.getElementById('image-input').addEventListener('change', function(e) {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) {
+                    addImagePreview(files[i]);
+                }
+            }
+        });
+        
+        // Allow dropping images
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const files = e.dataTransfer.files;
+            const imageInput = document.getElementById('image-input');
+            
+            // Create a new DataTransfer object to hold the files
+            const dataTransfer = new DataTransfer();
+            
+            // Add existing files if any
+            for (let i = 0; i < imageInput.files.length; i++) {
+                dataTransfer.items.add(imageInput.files[i]);
+            }
+            
+            // Add new files
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) {
+                    dataTransfer.items.add(files[i]);
+                    addImagePreview(files[i]);
+                }
+            }
+            
+            // Update the file input
+            imageInput.files = dataTransfer.files;
+        });
+    </script>
+</body>
+</html>
