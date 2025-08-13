@@ -13,7 +13,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Configure the Gemini API
-GOOGLE_API_KEY = 'AIzaSyCMk9d5Td3hSLTAGY9rAhz3Af-nwsBtucs'
+GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
